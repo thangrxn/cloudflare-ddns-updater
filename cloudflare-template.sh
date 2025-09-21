@@ -60,7 +60,7 @@ do
   ## Seek for the A record
   ###########################################
 
-  logger "DDNS Updater: Check Initiated"
+  logger -s "DDNS Updater: Check Initiated"
   record=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zone_identifier/dns_records?type=A&name=$record_name" \
                         -H "X-Auth-Email: $auth_email" \
                         -H "$auth_header $auth_key" \
@@ -71,7 +71,7 @@ do
   ###########################################
   if [[ $record == *"\"count\":0"* ]]; then
     logger -s "DDNS Updater: Record does not exist, perhaps create one first? (${CURRENT_IP} for ${record_name})"
-    exit 1
+    continue
   fi
 
   ###########################################
@@ -80,8 +80,8 @@ do
   old_ip=$(echo "$record" | sed -E 's/.*"content":"(([0-9]{1,3}\.){3}[0-9]{1,3})".*/\1/')
   # Compare if they're the same
   if [[ $CURRENT_IP == $old_ip ]]; then
-    logger "DDNS Updater: IP ($CURRENT_IP) for ${record_name} has not changed."
-    exit 0
+    logger -s "DDNS Updater: IP ($CURRENT_IP) for ${record_name} has not changed."
+    continue
   fi
 
   ###########################################
@@ -117,9 +117,9 @@ do
         "content" : "'"$sitename"' DDNS Update Failed: '$record_name': '$record_identifier' ('$CURRENT_IP')."
       }' $discorduri
     fi
-    exit 1;;
+    continue;;
   *)
-    logger "DDNS Updater: $CURRENT_IP $record_name DDNS updated."
+    logger -s "DDNS Updater: $CURRENT_IP $record_name DDNS updated."
     if [[ $slackuri != "" ]]; then
       curl -L -X POST $slackuri \
       --data-raw '{
@@ -133,7 +133,7 @@ do
         "content" : "'"$sitename"' Updated: '$record_name''"'"'s'""' new IP Address is '$CURRENT_IP'"
       }' $discorduri
     fi
-    exit 0;;
+    continue;;
   esac
 
 done
